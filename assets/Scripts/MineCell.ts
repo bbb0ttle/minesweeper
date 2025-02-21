@@ -10,7 +10,7 @@ export class MineCell extends Component {
         this.initNormalCellUI();
         this.state = CellState.Normal;
 
-        this.node.on(Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
+        this.node.on(Node.EventType.MOUSE_UP, this.onMouseDown, this);
     }
 
     onMouseDown(event: EventMouse) {

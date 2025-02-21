@@ -936,6 +936,9 @@
     "statusIcon": {
       "__id__": 54
     },
+    "stats": {
+      "__id__": 74
+    },
     "_id": "28mPp6o4dCworFIb/KDfwK"
   },
   {
@@ -1623,7 +1626,7 @@
         "__id__": 74
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 77

@@ -13,6 +13,6 @@ export class Timer {
     private _end: number;
 
     public getSecStr() {
-        return ((this._end - this._end) / 1000).toFixed(3);
+        return ((this._end - this._start) / 1000).toFixed(3) + ' s';
     }
 }

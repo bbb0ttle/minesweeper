@@ -1,4 +1,4 @@
-import {_decorator, Component, instantiate, Node} from 'cc';
+import {_decorator, Component, instantiate, Node, Label} from 'cc';
 import {MineCell} from "db://assets/Scripts/MineCell";
 import {CellState} from "db://assets/Scripts/types/cell";
 import {Timer} from "db://assets/Scripts/Utils/Timer";
@@ -14,12 +14,15 @@ export class Board extends Component {
         this.generateMines();
 
         this.status = this.statusIcon.getComponent(GameStatus);
-        this.status.setStatus(Status.Running)
+        // this.status.setStatus(Status.Running)
     }
 
 
     @property({ type: Node })
     public statusIcon: Node | null;
+
+    @property({ type: Node })
+    public stats: Node | null;
 
     private _matrixSize: number = 10;
     private _nodeMatrix: MineCell[][] = [];
@@ -28,6 +31,16 @@ export class Board extends Component {
 
     private _timer = new Timer();
     private status: GameStatus;
+
+    private _stats: Label;
+
+    private setStats(stats: string) {
+        this._stats.string = stats;
+    }
+
+    private clearStats() {
+        this._stats.string = '';
+    }
 
     private initMatrixUI() {
         const nodeTpl = this.node.getChildByName('CellTpl');
@@ -48,6 +61,9 @@ export class Board extends Component {
 
         // hide tpl
         nodeTpl.active = false;
+
+        this._stats = this.stats.getComponent(Label);
+        this.clearStats();
     }
 
     public isWin(): boolean {
@@ -111,6 +127,9 @@ export class Board extends Component {
         this._timer.stop();
 
         this.status.setStatus(win ? Status.Win : Status.Fail);
+        if (win) {
+            this.setStats(this._timer.getSecStr());
+        }
 
         for (let i = 0; i < this._matrixSize; i++) {
             for (let j = 0; j < this._matrixSize; j++) {
@@ -140,6 +159,7 @@ export class Board extends Component {
 
         this.generateMines();
         this.status.setStatus(Status.Running)
+        this.clearStats();
     }
 
     public getMineCount(cell: MineCell): number {
