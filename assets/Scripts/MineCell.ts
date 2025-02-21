@@ -1,5 +1,6 @@
-import { _decorator, Component, RichText, Node, Color, Graphics } from 'cc';
+import { _decorator, EventMouse, Component, RichText, Node, Color, Graphics } from 'cc';
 import {CellState} from "db://assets/Scripts/types/cell";
+import {Board} from "db://assets/Scripts/Board";
 const { ccclass, property } = _decorator;
 
 @ccclass('MineCell')
@@ -8,6 +9,116 @@ export class MineCell extends Component {
         this.initSubStateUI();
         this.initNormalCellUI();
         this.state = CellState.Normal;
+
+        this.node.on(Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
+    }
+
+    onMouseDown(event: EventMouse) {
+        if (this._board.isOver()) {
+            this._board.restart()
+            return;
+        }
+
+        if (this.isRevealed()) {
+            return;
+        }
+
+        if (event.getButton() === 0) {
+            this.handleLeftClick();
+            return;
+        }
+
+        if (event.getButton() === 2) {
+            this.handleRightClick();
+            return;
+        }
+    }
+
+    public reveal() {
+        if (this.hasMine) {
+            this.state = CellState.Mine;
+            return;
+        }
+
+
+        const count = this._board.getMineCount(this);
+        // if around has no mine, set empty
+        if (count === 0) {
+            this.state = CellState.Empty;
+            return;
+        }
+
+        this.setNumber(count);
+    }
+
+    public reset() {
+        this.state = CellState.Normal;
+        this.hasMine = false;
+    }
+
+    public attachToBoard(board: Board) {
+        this._board = board;
+    }
+
+    private _col: number;
+    private _row: number;
+
+    public getCol() {
+        return this._col;
+    }
+
+    public getRow() {
+        return this._row;
+    }
+
+    public assignPosition(col: number, row: number) {
+        this._col = col;
+        this._row = row;
+    }
+
+    private _board: Board;
+
+    public isRevealed() {
+        return this.state === CellState.Number || this.state === CellState.Empty;
+    }
+
+    handleLeftClick() {
+        if (this.hasMine) {
+            this.state = CellState.Mine;
+            this._board.gameOver(false);
+            return
+        }
+
+        const count = this._board.getMineCount(this);
+
+        if (count === 0) {
+            this._board.autoReveal(this);
+            this.state = CellState.Empty;
+            return;
+        }
+
+        this.setNumber(count);
+
+        if(this._board.isWin()) {
+            this._board.gameOver(true)
+        }
+
+        return;
+
+    }
+
+    handleRightClick() {
+        if (this.state === CellState.Flag) {
+            this.state = CellState.Normal;
+            return;
+        }
+
+        if (this.state === CellState.Normal) {
+            this.state = CellState.Flag;
+            return;
+        }
+
+        return;
     }
 
     private _state= CellState.Normal;
@@ -28,7 +139,8 @@ export class MineCell extends Component {
     }
 
     public setNumber(number: number) {
-        if (this.state !== CellState.Number) {
+        if (number === 0) {
+            this.state = CellState.Empty;
             return;
         }
 
@@ -38,6 +150,7 @@ export class MineCell extends Component {
 
         // set number
         richText.string = number.toString();
+        this.state = CellState.Number;
     }
 
     changeStateUI(state: CellState) {
@@ -56,6 +169,7 @@ export class MineCell extends Component {
         this._stateUIDict[CellState.Number] = this.node.getChildByName('number');
         this._stateUIDict[CellState.Mine] = this.node.getChildByName('bomb');
         this._stateUIDict[CellState.Flag] = this.node.getChildByName('flag');
+        this._stateUIDict[CellState.Empty] = this.node.getChildByName('empty');
     }
 
     getSubStateUI(state: CellState): Node {
@@ -70,8 +184,10 @@ export class MineCell extends Component {
 
         graphics.lineWidth = 3;
         graphics.strokeColor = Color.BLACK;
-        graphics.rect(-25, -25, 50, 50);
-        graphics.stroke();
+        graphics.rect(-24, -24, 48, 48);
+        Color.fromHEX(graphics.fillColor, "#111111");
+        graphics.fill();
+        // graphics.stroke();
     }
 
     update(deltaTime: number) {
