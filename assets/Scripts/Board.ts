@@ -1,7 +1,10 @@
-import { _decorator, Component, Node, instantiate} from 'cc';
+import {_decorator, Component, instantiate, Node} from 'cc';
 import {MineCell} from "db://assets/Scripts/MineCell";
 import {CellState} from "db://assets/Scripts/types/cell";
 import {Timer} from "db://assets/Scripts/Utils/Timer";
+import {GameStatus} from "db://assets/Scripts/GameStatus";
+import {GameStatus as Status} from "db://assets/Scripts/types/status";
+
 const { ccclass, property } = _decorator;
 
 @ccclass('Board')
@@ -9,7 +12,14 @@ export class Board extends Component {
     start() {
         this.initMatrixUI();
         this.generateMines();
+
+        this.status = this.statusIcon.getComponent(GameStatus);
+        this.status.setStatus(Status.Running)
     }
+
+
+    @property({ type: Node })
+    public statusIcon: Node | null;
 
     private _matrixSize: number = 10;
     private _nodeMatrix: MineCell[][] = [];
@@ -17,6 +27,7 @@ export class Board extends Component {
     private _generatedMineCount: number = 0;
 
     private _timer = new Timer();
+    private status: GameStatus;
 
     private initMatrixUI() {
         const nodeTpl = this.node.getChildByName('CellTpl');
@@ -99,6 +110,8 @@ export class Board extends Component {
         this._isOver = true;
         this._timer.stop();
 
+        this.status.setStatus(win ? Status.Win : Status.Fail);
+
         for (let i = 0; i < this._matrixSize; i++) {
             for (let j = 0; j < this._matrixSize; j++) {
                 const cell = this._nodeMatrix[i][j];
@@ -126,6 +139,7 @@ export class Board extends Component {
         }
 
         this.generateMines();
+        this.status.setStatus(Status.Running)
     }
 
     public getMineCount(cell: MineCell): number {

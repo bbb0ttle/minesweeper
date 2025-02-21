@@ -5,9 +5,3 @@ export enum CellState {
     Flag,
     Empty,
 }
-
-export enum GameStatus {
-    Running,
-    Win,
-    Fail,
-}
