@@ -1,6 +1,8 @@
-import { _decorator, EventMouse, Component, RichText, Node, Color, Graphics } from 'cc';
+import {_decorator, Color, Component, EventMouse, Graphics, Node, RichText} from 'cc';
 import {CellState} from "db://assets/Scripts/types/cell";
 import {Board} from "db://assets/Scripts/Board";
+import {EventManager, MineEvent} from "db://assets/Scripts/Utils/Event";
+
 const { ccclass, property } = _decorator;
 
 @ccclass('MineCell')
@@ -10,18 +12,20 @@ export class MineCell extends Component {
         this.initNormalCellUI();
         this.state = CellState.Normal;
 
-        this.node.on(Node.EventType.MOUSE_UP, this.onMouseDown, this);
+        this.node.on(Node.EventType.MOUSE_UP, this.onMouseUp, this);
     }
 
-    onMouseDown(event: EventMouse) {
-        if (this._board.isOver()) {
-            this._board.restart()
+    onMouseUp(event: EventMouse) {
+        if (this._board.manager.isGameOver) {
+            EventManager.emit(MineEvent.Restart, false);
             return;
         }
 
         if (this.isRevealed()) {
             return;
         }
+
+        this._board.manager.tryStarTimer();
 
         if (event.getButton() === 0) {
             this.handleLeftClick();
@@ -85,7 +89,7 @@ export class MineCell extends Component {
     handleLeftClick() {
         if (this.hasMine) {
             this.state = CellState.Mine;
-            this._board.gameOver(false);
+            EventManager.emit(MineEvent.GameOver, false);
             return
         }
 
@@ -100,7 +104,7 @@ export class MineCell extends Component {
         this.setNumber(count);
 
         if(this._board.isWin()) {
-            this._board.gameOver(true)
+            EventManager.emit(MineEvent.GameOver, true);
         }
 
         return;
@@ -191,7 +195,7 @@ export class MineCell extends Component {
     }
 
     update(deltaTime: number) {
-        
+
     }
 }
 

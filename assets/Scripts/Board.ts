@@ -1,9 +1,7 @@
 import {_decorator, Component, instantiate, Node, Label} from 'cc';
 import {MineCell} from "db://assets/Scripts/MineCell";
 import {CellState} from "db://assets/Scripts/types/cell";
-import {Timer} from "db://assets/Scripts/Utils/Timer";
-import {GameStatus} from "db://assets/Scripts/GameStatus";
-import {GameStatus as Status} from "db://assets/Scripts/types/status";
+import {GameManager} from "db://assets/Scripts/GameManager";
 
 const { ccclass, property } = _decorator;
 
@@ -12,35 +10,15 @@ export class Board extends Component {
     start() {
         this.initMatrixUI();
         this.generateMines();
-
-        this.status = this.statusIcon.getComponent(GameStatus);
-        // this.status.setStatus(Status.Running)
     }
-
-
-    @property({ type: Node })
-    public statusIcon: Node | null;
-
-    @property({ type: Node })
-    public stats: Node | null;
 
     private _matrixSize: number = 10;
     private _nodeMatrix: MineCell[][] = [];
     private _mineCount: number = 10;
     private _generatedMineCount: number = 0;
 
-    private _timer = new Timer();
-    private status: GameStatus;
-
-    private _stats: Label;
-
-    private setStats(stats: string) {
-        this._stats.string = stats;
-    }
-
-    private clearStats() {
-        this._stats.string = '';
-    }
+    @property({ type: GameManager })
+    public manager: GameManager
 
     private initMatrixUI() {
         const nodeTpl = this.node.getChildByName('CellTpl');
@@ -61,9 +39,6 @@ export class Board extends Component {
 
         // hide tpl
         nodeTpl.active = false;
-
-        this._stats = this.stats.getComponent(Label);
-        this.clearStats();
     }
 
     public isWin(): boolean {
@@ -78,6 +53,32 @@ export class Board extends Component {
         }
 
         return count === this._matrixSize * this._matrixSize - this._mineCount;
+    }
+
+    public isFail(): boolean {
+        for (let i = 0; i < this._matrixSize; i++) {
+            for (let j = 0; j < this._matrixSize; j++) {
+                const cell = this._nodeMatrix[i][j];
+                if (cell.isRevealed() && cell.hasMine) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public isGameOver(): boolean {
+        return this.isWin() || this.isFail();
+    }
+
+    public revealAll() {
+        for (let i = 0; i < this._matrixSize; i++) {
+            for (let j = 0; j < this._matrixSize; j++) {
+                const cell = this._nodeMatrix[i][j];
+                cell.reveal();
+            }
+        }
     }
 
     public autoReveal(cell: MineCell) {
@@ -122,33 +123,7 @@ export class Board extends Component {
         return neighbours;
     }
 
-    public gameOver(win) {
-        this._isOver = true;
-        this._timer.stop();
-
-        this.status.setStatus(win ? Status.Win : Status.Fail);
-        if (win) {
-            this.setStats(this._timer.getSecStr());
-        }
-
-        for (let i = 0; i < this._matrixSize; i++) {
-            for (let j = 0; j < this._matrixSize; j++) {
-                const cell = this._nodeMatrix[i][j];
-                if (cell.hasMine) {
-                    cell.reveal();
-                }
-            }
-        }
-    }
-
-    private _isOver: boolean = false;
-
-    public isOver(): boolean {
-        return this._isOver;
-    }
-
-    public restart() {
-        this._isOver = false;
+    public reset() {
         this._generatedMineCount = 0;
         for (let i = 0; i < this._matrixSize; i++) {
             for (let j = 0; j < this._matrixSize; j++) {
@@ -158,8 +133,6 @@ export class Board extends Component {
         }
 
         this.generateMines();
-        this.status.setStatus(Status.Running)
-        this.clearStats();
     }
 
     public getMineCount(cell: MineCell): number {
@@ -188,16 +161,6 @@ export class Board extends Component {
             cell.hasMine = true;
             this._generatedMineCount++;
         }
-
-        this._timer.start();
-    }
-
-    getCell(col: number, row: number) {
-        return this._nodeMatrix[col][row];
-    }
-
-    update(deltaTime: number) {
-        
     }
 }
 
